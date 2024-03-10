@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:mariadb://mariadb:3306/database_name?useUnicode=true
+    username: demo
+    password: 1234
+    driver-class-name: org.mariadb.jdbc.Driver
+  data:
+    redis:
+      host: host.docker.internal
+      port: 6379
+
+cache:
+  default:
+    ttl:
+      seconds: 1
