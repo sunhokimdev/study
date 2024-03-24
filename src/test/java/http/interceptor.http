@@ -1,0 +1,48 @@
+### Interceptor Admin User Add
+POST http://localhost:8080/interceptor/add
+Content-Type: application/json
+
+{
+  "email": "sunhokim@test.com",
+  "name": "sunhokim",
+  "password": "1234",
+  "memo": "test",
+  "mobile": "010-0000-0000",
+  "auth": "ROLE_ADMIN"
+}
+
+### Interceptor Normal User Add
+POST http://localhost:8080/interceptor/add
+Content-Type: application/json
+
+{
+  "email": "test01@test.com",
+  "name": "test01",
+  "password": "1234",
+  "memo": "normal user01",
+  "mobile": "010-0000-0000",
+  "auth": "ROLE_USER"
+}
+
+### Interceptor Normal User Add
+POST http://localhost:8080/interceptor/add
+Content-Type: application/json
+
+{
+  "email": "test02@test.com",
+  "name": "test02",
+  "password": "1234",
+  "memo": "normal user02",
+  "mobile": "010-0000-0000",
+  "auth": "ROLE_USER"
+}
+
+### Interceptor Admin User Access UserList
+GET http://localhost:8080/interceptor/list
+Content-Type: application/json
+Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NjYwMTM1NDgsImF1dGgiOiJST0xFX0FETUlOIn0.rZD6IWHKI02joT9cvYDh8U7tuOfsUcIftoif0nbn7ew
+
+### Interceptor Admin User Access UserList
+GET http://localhost:8080/interceptor/list
+Content-Type: application/json
+Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NjYwMTM1ODQsImF1dGgiOiJST0xFX1VTRVIifQ.-ydkPHurw2MomJJUttYQB9NaC-SH3GAItCT4Gqz-lSQ

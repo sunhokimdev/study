@@ -1,0 +1,17 @@
+### serialize
+GET http://localhost:8080/serial/serialize
+Content-Type: application/json
+
+{
+  "name": "sunhokim",
+  "mobile": "010-0000-0000",
+  "age": 32
+}
+
+### deserialize
+GET http://localhost:8080/serial/deserialize
+Content-Type: application/json
+
+{
+  "base64Member": "rO0ABXNyACxib2R5ZG9kaS5zdHVkeS5zZXJpYWxpemUuZG9tYWluLlNlcmlhbE1lbWJlcgAAAAAAAAABAgADSQADYWdlTAAGbW9iaWxldAASTGphdmEvbGFuZy9TdHJpbmc7TAAEbmFtZXEAfgABeHAAAAAgdAANMDEwLTAwMDAtMDAwMHQACHN1bmhva2lt"
+}
