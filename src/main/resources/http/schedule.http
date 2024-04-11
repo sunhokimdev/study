@@ -1,0 +1,14 @@
+POST http://localhost:9999/api/schedule/save
+Content-Type: application/json;charset=UTF-8
+
+{
+  "seqLesson": 1
+}
+
+###
+POST http://localhost:9999/api/schedule/save/distributedlock
+Content-Type: application/json;charset=UTF-8
+
+{
+  "seqLesson": 2
+}

@@ -1,0 +1,6 @@
+POST http://localhost:9999/api/lesson
+Content-Type: application/json;charset=UTF-8
+
+{
+  "lessonAmount": 1
+}
