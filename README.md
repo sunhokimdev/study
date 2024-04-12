@@ -18,13 +18,76 @@
 
 ### 경합상태(race-condition)란?
 
-여러 프로세스가 동시에 공유하는 자원에 접근함에 따라 일어나는 예상치 못한 이상이나 상태를 말한다. 또한 경합 상태를 일으키는 프로그램 코드 부분을 크리티컬 섹션(Critical Section)이라 부르며, 크리티컬 섹션 실행 권한을 얻는 것을 락을 획득한다 말하며, 획득한 권한을 반환하는 것을 락을 해제한다 말한다.
+여러 프로세스가 동시에 공유하는 자원에 접근함에 따라 일어나는 예상치 못한 이상이나 상태를 말한다. 또한 경합 상태를 일으키는 프로그램 코드 부분을 크리티컬 섹션(Critical Section = 임계영역)이라 부르며, 크리티컬 섹션 실행 권한을 얻는 것을 락을 획득한다 말하며, 획득한 권한을 반환하는 것을 락을 해제한다 말한다.
+
+```java
+try {
+    Task task = new Task();
+
+    Thread threadA = new Thread(() -> {
+        task.calculate();
+    });
+
+    Thread threadB = new Thread(() -> {
+        task.calculate();
+    });
+
+    threadA.start();
+    threadB.start();
+
+    threadA.join();
+    threadB.join();
+
+    System.out.println(task.getSum());
+} catch (InterruptedException e) {
+    e.printStackTrace();
+}
+```
+
+```java
+public class Task {
+    private long sum = 0; 
+
+    public void calculate() {
+        for (long i = 0; i <10000; i++) {
+            ++sum;
+        }
+    }
+
+    public long getSum() {
+        return sum;
+    }
+}
+```
+
+위 코드에서 출력이 12385로 두 스레드가 하나의 인스턴스 변수에 접근(임계영역)하여 발생한 문제다. 따라서 임계영역에 두 스레드가 동시에 접근을 막기 위해 아래 처럼 `synchronized` 키워드를 사용하여 동기화 하는 방법이 있다.
+
+```java
+public class Task {
+
+    // sum 인스턴스 변수에 두 스레드가 접근하여 값을 변경하는 것이 문제
+    private long sum = 0; 
+
+    // synchronized statement 방식 사용
+    public void calculate() {
+        for (long i = 0; i <10000; i++) {
+            synchronized(this) { // 해당 내용만 동기화
+                ++sum;
+            }
+        }
+    }
+
+    public long getSum() {
+        return sum;
+    }
+}
+```
 
 ### 분산락이란?
 
-하지만 위 방식에선 한 서버에서 여러 프로세스가 공유 하는 자원에 동시다발적으로 접근 방지하는 방법이긴 하나, 여러 대의 서버에서 실행하는 같은 코드에 대해선 동시다발적으로 접근을 방지할 수 없다. 따라서 여러 서버에서 크리티컬 섹션에 접근하는 것을 방지하기 위한 방법으로 분산락을 도입하기로 했다.
+하지만 위 방식에선 한 서버에서 한 프로세스의 스레드가 공유 하는 자원에 동시다발적으로 공유 변수에 접근 방지하는 방법이긴 하나, 여러 대의 서버에서 실행하는 같은 코드(임계 영역)에 대해선 동시 다발적으로 접근을 방지할 수 없다. 따라서 여러 서버에서 임계영역에 접근하는 것을 방지하기 위한 방법으로 분산락을 도입하기로 했다.
 
-분산락은 분산 시스템에서 안전하게 공유 자원을 사용하고, 동시성을 향상시키기 위한 락이다. 그리고 분산 시스템에서 사용하기 위해선 MariaDB이나 Redis, Zookeeper 같은 외부 툴???를 활용하여 락 처리를 한다.
+분산락은 분산 시스템에서 안전하게 공유 자원을 사용하고, 동시성을 향상시키기 위한 락이다. 그리고 분산 시스템에서 사용하기 위해선 MariaDB이나 Redis, Zookeeper 같은 데이터 베이스 시스템을 활용하여 락 처리를 한다.
 
 #### Redis를 선택한 이유
 
@@ -46,11 +109,12 @@ Spring boot 2.0 부터 Netty(비동기 이벤트 기반 고성능 네트워크 �
 
 * 스핀락을 사용하지 않는다.
 
-    * 따라서 Redis에 부하가 발생하지 않는다.
+  * 따라서 Redis에 부하가 발생하지 않는다.
 
 * Lua 스크립트를 사용한다.
 
-    * 가볍고 빠르며 임베디드 시스템에서 많이 사용되는 스크립트 언어 중 하나
+  * 가볍고 빠르며 임베디드 시스템에서 많이 사용되는 스크립트 언어 중 하나
+
 
 
 
@@ -212,32 +276,32 @@ $ docker-compose down --rmi all
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface DistributedLock {
-    /**
-     * 락 이름
-     */
-    String key();
+  /**
+   * 락 이름
+   */
+  String key();
 
-    /**
-     * 락 prefix 이름
-     */
-    String lockPrefix();
+  /**
+   * 락 prefix 이름
+   */
+  String lockPrefix();
 
-    /**
-     * 락의 시간 단위
-     */
-    TimeUnit timeUnit() default TimeUnit.SECONDS;
+  /**
+   * 락의 시간 단위
+   */
+  TimeUnit timeUnit() default TimeUnit.SECONDS;
 
-    /**
-     * 락을 기다리는 시간 (default - 5s)
-     * 락 획득을 위해 waitTime 까지 기다린다.
-     */
-    long waitTime() default 5L;
+  /**
+   * 락을 기다리는 시간 (default - 5s)
+   * 락 획득을 위해 waitTime 까지 기다린다.
+   */
+  long waitTime() default 5L;
 
-    /**
-     * 락 임대시간 (default - 3s)
-     * 락을 획득한 이후 leaseTime이 지나면 락을 해제한다.
-     */
-    long leaseTime() default 3L;
+  /**
+   * 락 임대시간 (default - 3s)
+   * 락을 획득한 이후 leaseTime이 지나면 락을 해제한다.
+   */
+  long leaseTime() default 3L;
 }
 ```
 
@@ -247,53 +311,53 @@ public @interface DistributedLock {
 @Component
 @RequiredArgsConstructor
 public class DistributedLockAop {
-    private final RedissonClient redissonClient;
+  private final RedissonClient redissonClient;
 
-    @Around("@annotation(com.example.study.common.task.DistributedLock)")
-    public Object lock(final ProceedingJoinPoint joinPoint) throws Throwable {
-        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        Method method = methodSignature.getMethod();
-        DistributedLock classScheduleCloseDistributedLock = method.getAnnotation(DistributedLock.class);
+  @Around("@annotation(com.example.study.common.task.DistributedLock)")
+  public Object lock(final ProceedingJoinPoint joinPoint) throws Throwable {
+    MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+    Method method = methodSignature.getMethod();
+    DistributedLock classScheduleCloseDistributedLock = method.getAnnotation(DistributedLock.class);
 
-        String redisKey = classScheduleCloseDistributedLock.lockPrefix() + CustomSpringELParser.getDynamicValue(methodSignature.getParameterNames(), joinPoint.getArgs(), classScheduleCloseDistributedLock.key());
-        RLock redissonClientLock = redissonClient.getLock(redisKey);
+    String redisKey = classScheduleCloseDistributedLock.lockPrefix() + CustomSpringELParser.getDynamicValue(methodSignature.getParameterNames(), joinPoint.getArgs(), classScheduleCloseDistributedLock.key());
+    RLock redissonClientLock = redissonClient.getLock(redisKey);
 
-        try {
-            boolean tryLock = redissonClientLock.tryLock(classScheduleCloseDistributedLock.waitTime(), classScheduleCloseDistributedLock.leaseTime(), classScheduleCloseDistributedLock.timeUnit());
-            if (!tryLock) {
-                log.info(">>>>>>>>>>>>>> 이미 처리 중인 Lock({}) 입니다.", redisKey);
-                return false;
-            }
+    try {
+      boolean tryLock = redissonClientLock.tryLock(classScheduleCloseDistributedLock.waitTime(), classScheduleCloseDistributedLock.leaseTime(), classScheduleCloseDistributedLock.timeUnit());
+      if (!tryLock) {
+        log.info(">>>>>>>>>>>>>> 이미 처리 중인 Lock({}) 입니다.", redisKey);
+        return false;
+      }
 
-            return joinPoint.proceed();
-        } catch(InterruptedException exception) {
-            log.info(">>>>>>>>>>>>> Lock 경합 과정에서 에러가 발생했습니다. {}", redisKey, exception);
-            throw new InterruptedException(exception.getMessage());
-        } finally {
-            try {
-                redissonClientLock.unlock();
-                log.info(">>>>>>>>>>>>> 처리를 완료하여 Lock({})을 해제 했습니다.", redisKey);
-            } catch(IllegalMonitorStateException exception) {
-                log.debug("Redisson lock already unLock {} {}", method.getName(), redisKey, exception);
-            }
-        }
+      return joinPoint.proceed();
+    } catch(InterruptedException exception) {
+      log.info(">>>>>>>>>>>>> Lock 경합 과정에서 에러가 발생했습니다. {}", redisKey, exception);
+      throw new InterruptedException(exception.getMessage());
+    } finally {
+      try {
+        redissonClientLock.unlock();
+        log.info(">>>>>>>>>>>>> 처리를 완료하여 Lock({})을 해제 했습니다.", redisKey);
+      } catch(IllegalMonitorStateException exception) {
+        log.debug("Redisson lock already unLock {} {}", method.getName(), redisKey, exception);
+      }
     }
+  }
 }
 ```
 
 ```java
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CustomSpringELParser {
-    public static Object getDynamicValue(String[] parameterNames, Object[] args, String key) {
-        ExpressionParser parser = new SpelExpressionParser();
-        StandardEvaluationContext context = new StandardEvaluationContext();
+  public static Object getDynamicValue(String[] parameterNames, Object[] args, String key) {
+    ExpressionParser parser = new SpelExpressionParser();
+    StandardEvaluationContext context = new StandardEvaluationContext();
 
-        for(int i = 0; i < parameterNames.length; i++) {
-            context.setVariable(parameterNames[i], args[i]);
-        }
-
-        return parser.parseExpression(key).getValue(context, Object.class);
+    for(int i = 0; i < parameterNames.length; i++) {
+      context.setVariable(parameterNames[i], args[i]);
     }
+
+    return parser.parseExpression(key).getValue(context, Object.class);
+  }
 }
 ```
 
@@ -311,8 +375,8 @@ Spring Expression Language 표현식을 파싱하고 평가하는 데 사용된�
 
 ```java
 ExpressionParser parser = new SpelExpressionParser();
-Expression exp = parser.parseExpression("'Hello World'.concat('!')");
-String message = (String) exp.getValue();
+        Expression exp = parser.parseExpression("'Hello World'.concat('!')");
+        String message = (String) exp.getValue();
 ```
 
 * message의 값은 'Hello World!' 이다.
@@ -324,11 +388,11 @@ SpEL의 평가 컨텍스트를 나타내며, SpEL 표현식을 평가하고 관�
 ```java
 // 생성자 인수는 firstName, lastName, age 이다.
 Member member = new Member("Hello", "World", 30);
-ExpressionParser parser = new SpelExpressionParser();
-Expression exp = parser.parseExpression("age");
-EvaluationContext context = new StandardEvaluationContext(member);
+        ExpressionParser parser = new SpelExpressionParser();
+        Expression exp = parser.parseExpression("age");
+        EvaluationContext context = new StandardEvaluationContext(member);
 
-Integer age = (Integer) exp.getValue(context);
+        Integer age = (Integer) exp.getValue(context);
 ```
 
 #### @Around("${pattern}")

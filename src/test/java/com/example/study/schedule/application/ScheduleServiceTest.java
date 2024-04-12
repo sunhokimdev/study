@@ -4,6 +4,7 @@ import com.example.study.StudyApplication;
 import com.example.study.lesson.application.LessonService;
 import com.example.study.lesson.domain.Lesson;
 import com.example.study.schedule.domain.Schedule;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -14,9 +15,11 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Slf4j
 @SpringBootTest(classes = StudyApplication.class,
                 webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ScheduleServiceTest {
@@ -40,7 +43,6 @@ public class ScheduleServiceTest {
         for (int i = 0; i < numberOfThreads; i++) {
             executorService.submit(() -> {
                 try {
-                    // 분산락 적용 메서드 호출 (락의 key는 쿠폰의 name으로 설정)
                     scheduleService.saveByIsolationReadUnCommitted(lesson.getSeqLesson());
                 } finally {
                     latch.countDown();
@@ -69,7 +71,6 @@ public class ScheduleServiceTest {
         for (int i = 0; i < numberOfThreads; i++) {
             executorService.submit(() -> {
                 try {
-                    // 분산락 적용 메서드 호출 (락의 key는 쿠폰의 name으로 설정)
                     scheduleService.saveByDistributedLock(lesson.getSeqLesson());
                 } finally {
                     latch.countDown();
